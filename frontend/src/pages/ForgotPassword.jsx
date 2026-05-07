@@ -7,7 +7,7 @@ import { Mail, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
 
 // ── Zod schema ──────────────────────────────────────────────────────────────
 const forgotSchema = z.object({
-  email: z.string().email('Please enter a valid email address').required('Email is required'),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
 })
 
 // ── ForgotPassword Page ─────────────────────────────────────────────────────

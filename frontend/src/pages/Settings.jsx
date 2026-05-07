@@ -8,18 +8,18 @@ import api from '../lib/axios'
 
 // ── Zod schemas ────────────────────────────────────────────────────────────
 const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').required('Name is required'),
-  email: z.string().email('Please enter a valid email address').required('Email is required'),
-  phone: z.string().min(1, 'Phone is required').required('Phone is required'),
-  jobTitle: z.string().min(1, 'Job title is required').required('Job title is required'),
-  company: z.string().min(1, 'Company is required').required('Company is required'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+  phone: z.string().min(1, 'Phone is required'),
+  jobTitle: z.string().min(1, 'Job title is required'),
+  company: z.string().min(1, 'Company is required'),
 })
 
 const passwordSchema = z
   .object({
-    currentPassword: z.string().min(6, 'Password must be at least 6 characters').required('Current password is required'),
-    newPassword: z.string().min(6, 'Password must be at least 6 characters').required('New password is required'),
-    confirmPassword: z.string().min(6, 'Password must be at least 6 characters').required('Please confirm your password'),
+    currentPassword: z.string().min(1, 'Current password is required').min(6, 'Password must be at least 6 characters'),
+    newPassword: z.string().min(1, 'New password is required').min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your password').min(6, 'Password must be at least 6 characters'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match',
