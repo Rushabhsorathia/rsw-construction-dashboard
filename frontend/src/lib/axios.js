@@ -2,7 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../store/authStore';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'https://api.cdash.rsw.work.gd',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -30,7 +30,6 @@ api.interceptors.response.use(
       const { logout } = useAuthStore.getState();
       logout();
 
-      // Only redirect if we're in a browser context and not already on /signin
       if (
         typeof window !== 'undefined' &&
         !window.location.pathname.startsWith('/signin')
