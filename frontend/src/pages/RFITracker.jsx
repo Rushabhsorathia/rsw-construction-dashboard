@@ -28,11 +28,11 @@ export default function RFITracker() {
 
   const rfis = rfi || []
 
-  const filtered = rfis.filter(r => {
+  const filtered = (rfis || []).filter(r => {
     const matchProj = projFilter === 'All Projects' || r.project === projFilter
     const matchTrade = tradeFilter === 'All Trades' || r.trade === tradeFilter
     const matchStatus = statusFilter === 'All' || r.status === statusFilter
-    const matchSearch = r.subject.toLowerCase().includes(search.toLowerCase()) || r.number.toString().includes(search)
+    const matchSearch = (r.subject || '').toLowerCase().includes(search.toLowerCase()) || (r.number || '').toString().includes(search)
     return matchProj && matchTrade && matchStatus && matchSearch
   })
 

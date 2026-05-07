@@ -28,8 +28,8 @@ export default function Subcontractors() {
     fetchSubcontractors()
   }, [fetchSubcontractors])
 
-  const filtered = subcontractors.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.trade.toLowerCase().includes(search.toLowerCase())
+  const filtered = (subcontractors || []).filter(s => {
+    const matchSearch = (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.trade || '').toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'All' || s.status === statusFilter
     return matchSearch && matchStatus
   })
@@ -125,8 +125,8 @@ export default function Subcontractors() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${statusColors[sc.status]}`}>
-                    {statusBadge[sc.status]}{sc.status}
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${statusColors[sc.status] || 'bg-slate-100 text-slate-600'}`}>
+                    {statusBadge[sc.status] || null}{sc.status}
                   </span>
                   <div className="flex items-center gap-0.5 mt-1 justify-end">
                     <Star size={11} className="text-amber-400 fill-amber-400" />
@@ -138,10 +138,10 @@ export default function Subcontractors() {
               {/* Stats row */}
               <div className="grid grid-cols-4 gap-2 mb-3">
                 {[
-                  { label: 'Defect Rate', value: `${sc.defectRate}%`, color: sc.defectRate > 5 ? 'text-red-500' : 'text-emerald-600' },
-                  { label: 'Response', value: `${sc.avgResponse}h`, color: 'text-slate-600' },
-                  { label: 'Contract', value: sc.value, color: 'text-slate-600' },
-                  { label: 'Projects', value: sc.projects.length, color: 'text-blue-600' },
+                  { label: 'Defect Rate', value: `${sc.defectRate || 0}%`, color: (sc.defectRate || 0) > 5 ? 'text-red-500' : 'text-emerald-600' },
+                  { label: 'Response', value: `${sc.avgResponse || 0}h`, color: 'text-slate-600' },
+                  { label: 'Contract', value: sc.value || '-', color: 'text-slate-600' },
+                  { label: 'Projects', value: (sc.projects || []).length, color: 'text-blue-600' },
                 ].map(s => (
                   <div key={s.label} className="text-center p-2 bg-slate-50 rounded-lg">
                     <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
@@ -154,7 +154,7 @@ export default function Subcontractors() {
               <div className="mb-3">
                 <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-1.5">Performance Trend (5 projects)</p>
                 <div className="flex gap-0.5 items-end h-6">
-                  {sc.performance.map((p, i) => (
+                  {(sc.performance || []).map((p, i) => (
                     <div key={i} className="flex-1 bg-blue-400 rounded-t transition-all" style={{ height: `${p}%` }} />
                   ))}
                 </div>
@@ -189,7 +189,7 @@ export default function Subcontractors() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] uppercase tracking-wide text-slate-400 mb-2">Projects</p>
-                    {sc.projects.map(p => (
+                    {(sc.projects || []).map(p => (
                       <p key={p} className="text-xs text-slate-600 mb-1 flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />{p}
                       </p>
@@ -197,7 +197,7 @@ export default function Subcontractors() {
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wide text-slate-400 mb-2">Contacts</p>
-                    {sc.contacts.map(c => (
+                    {(sc.contacts || []).map(c => (
                       <div key={c.name} className="mb-2">
                         <p className="text-xs font-semibold text-slate-700">{c.name}</p>
                         <p className="text-[10px] text-slate-400">{c.phone}</p>

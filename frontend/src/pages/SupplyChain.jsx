@@ -25,15 +25,15 @@ export default function SupplyChain() {
   const deliveries = supplyChain?.deliveries || []
   const materials = supplyChain?.materials || []
 
-  const filtered = deliveries.filter(d => {
-    const matchSearch = d.item.toLowerCase().includes(search.toLowerCase()) || d.supplier.toLowerCase().includes(search.toLowerCase())
+  const filtered = (deliveries || []).filter(d => {
+    const matchSearch = (d.item || '').toLowerCase().includes(search.toLowerCase()) || (d.supplier || '').toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'All' || d.status === statusFilter
     return matchSearch && matchStatus
   })
 
   const delayedCount = deliveries.filter(d => d.status === 'Delayed').length
   const expectedCount = deliveries.filter(d => d.status === 'Expected').length
-  const totalValue = deliveries.reduce((s, d) => s + parseFloat(d.value.replace('£','').replace(',','')), 0)
+  const totalValue = (deliveries || []).reduce((s, d) => s + parseFloat((d.value || '0').replace('£','').replace(',','')), 0)
 
   if (supplyChainLoading) {
     return (
@@ -140,7 +140,7 @@ export default function SupplyChain() {
           </thead>
           <tbody>
             {filtered.map((d, i) => {
-              const s = statusConfig[d.status]
+              const s = statusConfig[d.status] || statusConfig['On Time']
               return (
                 <tr key={d.id} className={`border-t border-slate-100 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
                   <td className="px-5 py-3.5">
@@ -185,7 +185,7 @@ export default function SupplyChain() {
         <div className="bg-white rounded-xl border border-orange-200 shadow-sm p-5">
           <h3 className="text-slate-800 font-semibold mb-4">Material Delivery Tracker</h3>
           <div className="space-y-4">
-            {materials.map(m => {
+            {(materials || []).map(m => {
               const pct = Math.round((m.delivered / m.ordered) * 100)
               return (
                 <div key={m.name} className="border border-slate-100 rounded-lg p-4">

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import useAppStore from '../store/appStore'
 
-const API_BASE = 'http://138.252.201.18:7997'
+const API_BASE = 'https://138.252.201.18:7997'
 
 const CATEGORIES = [
   { label: 'Project Intelligence', icon: TrendingUp, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-600' },

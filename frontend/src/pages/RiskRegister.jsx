@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   AlertTriangle, Shield, TrendingUp, TrendingDown, Plus, Filter,
   ChevronDown, Clock, Users, MapPin, DollarSign, Calendar, Loader2
@@ -109,8 +109,8 @@ export default function RiskRegister() {
           </thead>
           <tbody>
             {filtered.map((r, i) => (
-              <>
-                <tr key={r.id} className={`border-t border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+              <React.Fragment key={r.id}>
+                <tr className={`border-t border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                   onClick={() => setExpanded(expanded === r.id ? null : r.id)}>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export default function RiskRegister() {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
