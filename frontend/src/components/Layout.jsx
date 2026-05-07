@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, GitBranch, Wallet, Users,
   ShieldCheck, FileText, BotMessageSquare, Bell, Search,
   ChevronDown, Menu, X, LogOut, Settings, AlertTriangle,
   Camera, Truck, FileSpreadsheet, ClipboardList
 } from 'lucide-react'
+import useAuthStore from '../store/authStore'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -28,6 +29,16 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuthStore()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/signin')
+  }
+
+  const initials = user?.initials || (user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U')
+  const displayName = user?.name || 'User'
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -77,10 +88,23 @@ export default function Layout({ children }) {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t border-slate-700 p-3">
-          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-sm">
-            <Settings size={17} className="text-slate-500" />
+        <div className="border-t border-slate-700 p-3 space-y-1">
+          <Link to="/settings"
+            onClick={() => setSidebarOpen(false)}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              location.pathname.startsWith('/settings')
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700'
+            }`}
+          >
+            <Settings size={17} className={location.pathname.startsWith('/settings') ? 'text-white' : 'text-slate-500'} />
             Settings
+          </Link>
+          <button onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-all"
+          >
+            <LogOut size={17} className="text-slate-500" />
+            Sign Out
           </button>
         </div>
       </aside>
@@ -114,16 +138,16 @@ export default function Layout({ children }) {
             </button>
             <div className="relative">
               <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold">TM</div>
-                <span className="hidden sm:block text-slate-700 text-sm font-medium">Tom Mitchell</span>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold">{initials}</div>
+                <span className="hidden sm:block text-slate-700 text-sm font-medium">{displayName}</span>
                 <ChevronDown size={14} className="text-slate-400" />
               </button>
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50">
-                  <button className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  <Link to="/settings" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                     <Settings size={14} /> Settings
-                  </button>
-                  <button className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                  </Link>
+                  <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                     <LogOut size={14} /> Sign Out
                   </button>
                 </div>

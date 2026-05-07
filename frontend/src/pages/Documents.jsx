@@ -1,39 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   FileText, Upload, Download, Search, Filter, FolderOpen,
   RefreshCw, ExternalLink, Eye, Clock, User, MoreHorizontal,
   FileArchive, FileCode, FileSpreadsheet, Image, ChevronDown,
-  CheckCircle2, AlertCircle, Cloud
+  CheckCircle2, AlertCircle, Cloud, Loader2
 } from 'lucide-react'
-
-const documents = [
-  { id: 1, name: 'Architectural Drawing Rev. 4.2', type: 'DWG', updated: '26 Apr 2026', size: '14.2 MB', by: 'Arup & Partners', status: 'Current', project: 'Battersea Phase 2', category: 'Drawings', downloads: 24, version: '4.2', approved: true },
-  { id: 2, name: 'M&E Coordination Drawing', type: 'PDF', updated: '25 Apr 2026', size: '8.7 MB', by: 'Mott MacDonald', status: 'Current', project: 'Battersea Phase 2', category: 'M&E', downloads: 18, version: '2.1', approved: true },
-  { id: 3, name: 'Structural Steel RFI #34 — Response', type: 'PDF', updated: '24 Apr 2026', size: '1.3 MB', by: 'Buro Happold', status: 'Pending Review', project: 'Manchester Metro Hub', category: 'RFI', downloads: 7, version: '1.0', approved: false },
-  { id: 4, name: 'Programme Update — Week 17', type: 'XLSX', updated: '23 Apr 2026', size: '2.1 MB', by: 'Project Team', status: 'Current', project: 'All Projects', category: 'Programme', downloads: 45, version: '17', approved: true },
-  { id: 5, name: 'CDM Pre-Construction Info Pack', type: 'PDF', updated: '22 Apr 2026', size: '22.4 MB', by: 'SafetyFirst Consultancy', status: 'Current', project: 'All Projects', category: 'H&S', downloads: 12, version: '3.0', approved: true },
-  { id: 6, name: 'Golden Thread Log — BS Act', type: 'JSON', updated: '26 Apr 2026', size: '4.8 MB', by: 'Auto-sync', status: 'Current', project: 'Battersea Phase 2', category: 'Compliance', downloads: 31, version: '2.4', approved: true },
-  { id: 7, name: 'Bill of Quantities — Rev 3', type: 'XLSX', updated: '20 Apr 2026', size: '18.6 MB', by: 'Turner & Townsend', status: 'Pending Review', project: 'Manchester Metro Hub', category: 'Commercial', downloads: 9, version: '3.0', approved: false },
-  { id: 8, name: '3D BIM Model — Coordinated', type: 'IFC', updated: '25 Apr 2026', size: '248.0 MB', by: 'Arup & Partners', status: 'Current', project: 'Birmingham Central Plaza', category: 'BIM', downloads: 8, version: '5.3', approved: true },
-  { id: 9, name: 'Piling Method Statement', type: 'PDF', updated: '19 Apr 2026', size: '3.4 MB', by: 'Buro Happold', status: 'Current', project: 'Bristol Harbour Bridge', category: 'Method Statements', downloads: 14, version: '2.0', approved: true },
-  { id: 10, name: 'Fire Risk Assessment', type: 'PDF', updated: '18 Apr 2026', size: '5.2 MB', by: 'SafetyFirst Consultancy', status: 'Current', project: 'Leeds Green Park', category: 'H&S', downloads: 6, version: '1.0', approved: true },
-  { id: 11, name: 'Site Investigation Report', type: 'PDF', updated: '17 Apr 2026', size: '31.0 MB', by: 'WSP UK', status: 'Archived', project: 'Newcastle Innovation Centre', category: 'Reports', downloads: 3, version: '1.0', approved: true },
-  { id: 12, name: 'Labour Schedule — Week 17', type: 'XLSX', updated: '23 Apr 2026', size: '1.1 MB', by: 'Project Team', status: 'Current', project: 'All Projects', category: 'Commercial', downloads: 22, version: '17', approved: true },
-]
-
-const versionHistory = [
-  { doc: 'Architectural Drawing Rev. 4.2', versions: [
-    { v: '4.2', date: '26 Apr 2026', by: 'Arup & Partners', changes: 'Updated window schedules Floor 8-12, revised curtain wall detail' },
-    { v: '4.1', date: '18 Apr 2026', by: 'Arup & Partners', changes: 'M&E coordination changes, revised slab penetrations' },
-    { v: '4.0', date: '10 Apr 2026', by: 'Arup & Partners', changes: 'Planning condition discharge, updated elevations' },
-    { v: '3.0', date: '02 Mar 2026', by: 'Arup & Partners', changes: 'Full revision post-tender value engineering' },
-  ]},
-  { doc: 'Programme Update — Week 17', versions: [
-    { v: '17', date: '23 Apr 2026', by: 'Project Team', changes: 'Week 17 update — cladding start brought forward 3 days' },
-    { v: '16', date: '16 Apr 2026', by: 'Project Team', changes: 'Week 16 update — steel delivery delayed, float consumed' },
-    { v: '15', date: '09 Apr 2026', by: 'Project Team', changes: 'Week 15 update — UXO delay incorporated, EOT claimed' },
-  ]},
-]
+import useAppStore from '../store/appStore'
 
 const typeIcons = {
   PDF: { icon: FileText, color: 'text-red-500', bg: 'bg-red-50' },
@@ -47,13 +19,23 @@ const categories = ['All', 'Drawings', 'M&E', 'RFI', 'Programme', 'H&S', 'Compli
 const projects = ['All Projects', 'Battersea Phase 2', 'Manchester Metro Hub', 'Bristol Harbour Bridge', 'Leeds Green Park', 'Birmingham Central Plaza', 'Newcastle Innovation Centre']
 
 export default function Documents() {
+  const { documents, documentsLoading, fetchDocuments } = useAppStore()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('All')
   const [projFilter, setProjFilter] = useState('All Projects')
   const [statusFilter, setStatusFilter] = useState('All')
   const [expandedVersions, setExpandedVersions] = useState(null)
 
-  const filtered = documents.filter(d => {
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
+
+  const docs = documents || []
+  // Support documents as array or { documents: [...], versionHistory: [...] }
+  const docList = Array.isArray(docs) ? docs : (docs.documents || [])
+  const versionHistory = !Array.isArray(docs) ? (docs.versionHistory || []) : []
+
+  const filtered = docList.filter(d => {
     const matchSearch = d.name.toLowerCase().includes(search.toLowerCase())
     const matchCat = catFilter === 'All' || d.category === catFilter
     const matchProj = projFilter === 'All Projects' || d.project === projFilter
@@ -61,9 +43,40 @@ export default function Documents() {
     return matchSearch && matchCat && matchProj && matchStatus
   })
 
-  const totalDocs = documents.length
-  const totalSize = documents.reduce((s, d) => s + parseFloat(d.size), 0)
-  const pendingReview = documents.filter(d => d.status === 'Pending Review').length
+  const totalDocs = docList.length
+  const totalSize = docList.reduce((s, d) => s + parseFloat(d.size), 0)
+  const pendingReview = docList.filter(d => d.status === 'Pending Review').length
+
+  if (documentsLoading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 size={32} className="animate-spin text-orange-500" />
+      </div>
+    )
+  }
+
+  if (docList.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-slate-800 text-2xl font-bold">Documents</h1>
+            <p className="text-slate-500 text-sm">Document management and BIM coordination</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold rounded-lg shadow hover:from-orange-600 hover:to-orange-700 transition-all">
+              <Upload size={14} /> Upload
+            </button>
+          </div>
+        </div>
+        <div className="text-center py-16 bg-white rounded-xl border border-orange-200 shadow-sm">
+          <FileText size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-slate-600 text-lg font-semibold mb-1">No data yet</h3>
+          <p className="text-slate-400 text-sm">Connect the backend to see live data</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -216,7 +229,7 @@ export default function Documents() {
                       </div>
                     </td>
                   </tr>
-                  {expandedVersions === d.id && (
+                  {expandedVersions === d.id && versionHistory.length > 0 && (
                     <tr className="bg-blue-50/50 border-t border-blue-100">
                       <td colSpan={9} className="px-5 py-4">
                         <p className="text-xs font-bold text-slate-600 mb-3 uppercase tracking-wide">Version History — {d.name}</p>

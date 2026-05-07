@@ -1,9 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Users, AlertTriangle, TrendingUp } from 'lucide-react'
-import { resources } from '../data/mockData'
+import useAppStore from '../store/appStore'
 
 export default function Resources() {
   const [filter, setFilter] = useState('All')
+  const resources = useAppStore(s => s.resources)
+  const resourcesLoading = useAppStore(s => s.resourcesLoading)
+  const fetchResources = useAppStore(s => s.fetchResources)
+
+  useEffect(() => {
+    if (resources.length === 0) fetchResources()
+  }, [])
+
+  if (resourcesLoading && resources.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   const shortfall = resources.filter(r => r.pct >= 90)
   const totalWorkforce = resources.reduce((s, r) => s + r.allocated, 0)

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, Search, Filter, ArrowRight, MapPin, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { projects } from '../data/mockData'
+import { Building2, Search, Filter, ArrowRight, MapPin, TrendingUp, TrendingDown, Minus, Loader2, AlertTriangle } from 'lucide-react'
+import useAppStore from '../store/appStore'
 
 const statusColors = {
   'On Track': 'bg-emerald-100 text-emerald-700',
@@ -14,12 +14,50 @@ export default function Projects() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [typeFilter, setTypeFilter] = useState('All')
 
+  const projects = useAppStore(s => s.projects)
+  const projectsLoading = useAppStore(s => s.projectsLoading)
+  const projectsError = useAppStore(s => s.projectsError)
+  const fetchProjects = useAppStore(s => s.fetchProjects)
+
+  useEffect(() => {
+    if (projects.length === 0) fetchProjects()
+  }, [])
+
   const filtered = projects.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.client.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = (p.name || '').toLowerCase().includes(search.toLowerCase()) || (p.client || '').toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'All' || p.status === statusFilter
     const matchType = typeFilter === 'All' || p.type === typeFilter
     return matchSearch && matchStatus && matchType
   })
+
+  if (projectsLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin text-orange-500 mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">Loading projects…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (projectsError) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertTriangle size={32} className="text-red-400 mx-auto mb-3" />
+          <p className="text-slate-600 font-medium">Failed to load projects</p>
+          <p className="text-slate-400 text-xs mt-1">{projectsError}</p>
+          <button
+            onClick={() => fetchProjects()}
+            className="mt-3 px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -76,7 +114,7 @@ export default function Projects() {
                   <p className="text-slate-500 text-xs mt-0.5">{p.client}</p>
                 </div>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-bold ${statusColors[p.status]}`}>{p.status}</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-bold ${statusColors[p.status] || 'bg-slate-100 text-slate-700'}`}>{p.status}</span>
             </div>
 
             <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">

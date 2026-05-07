@@ -1,13 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, FileText, Shield } from 'lucide-react'
-import { healthSafety, cdmCompliance, goldenThread } from '../data/mockData'
+import useAppStore from '../store/appStore'
 
 export default function HealthSafety() {
   const [tab, setTab] = useState('overview')
+  const healthSafety = useAppStore(s => s.healthSafety)
+  const healthSafetyLoading = useAppStore(s => s.healthSafetyLoading)
+  const fetchHealthSafety = useAppStore(s => s.fetchHealthSafety)
+
+  useEffect(() => {
+    if (healthSafety.length === 0) fetchHealthSafety()
+  }, [])
+
+  // Derive sub-data from store response
+  const hsData = Array.isArray(healthSafety) ? {} : (healthSafety || {})
+  const cdmCompliance = hsData.cdmCompliance || []
+  const goldenThread = hsData.goldenThread || []
+
+  if (healthSafetyLoading && healthSafety.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   const completed = cdmCompliance.filter(c => c.done).length
   const total = cdmCompliance.length
-  const goldenPct = Math.round(goldenThread.filter(g => g.status === 'Complete').length / goldenThread.length * 100)
+  const goldenPct = goldenThread.length > 0 ? Math.round(goldenThread.filter(g => g.status === 'Complete').length / goldenThread.length * 100) : 0
 
   return (
     <div className="space-y-6">

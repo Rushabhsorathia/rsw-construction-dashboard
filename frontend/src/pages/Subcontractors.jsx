@@ -1,123 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Users, Plus, Star, Phone, Mail, FileText, Shield,
-  TrendingUp, AlertCircle, CheckCircle2, Clock, Search, Filter
+  TrendingUp, AlertCircle, CheckCircle2, Clock, Search, Filter, Loader2
 } from 'lucide-react'
-
-const subcontractors = [
-  {
-    id: 1,
-    name: 'Precision Steel Fixers Ltd',
-    trade: 'Steel Fixers',
-    rating: 4.8,
-    projects: ['Battersea Phase 2', 'Manchester Metro Hub'],
-    defectRate: 1.2,
-    avgResponse: 2.4,
-    cscsCompliant: true,
-    status: 'Preferred',
-    value: '£2.4M',
-    contacts: [{ name: 'Mike Richards', phone: '+44 7700 123456', email: 'mike@precisionsteel.co.uk' }],
-    performance: [95, 92, 98, 94, 97],
-  },
-  {
-    id: 2,
-    name: 'Metro Facades International',
-    trade: 'External Cladding',
-    rating: 4.2,
-    projects: ['Manchester Metro Hub', 'Birmingham Central Plaza'],
-    defectRate: 3.8,
-    avgResponse: 5.1,
-    cscsCompliant: true,
-    status: 'Approved',
-    value: '£3.1M',
-    contacts: [{ name: 'David Chen', phone: '+44 7700 234567', email: 'dchen@metrofacades.com' }],
-    performance: [88, 85, 82, 87, 84],
-  },
-  {
-    id: 3,
-    name: 'PD Plumbing & Heating',
-    trade: 'M&E — Plumbing',
-    rating: 3.5,
-    projects: ['Battersea Phase 2', 'Leeds Green Park'],
-    defectRate: 8.4,
-    avgResponse: 8.2,
-    cscsCompliant: true,
-    status: 'On Notice',
-    value: '£1.2M',
-    contacts: [{ name: 'Paul Davies', phone: '+44 7700 345678', email: 'paul@pdplumbing.co.uk' }],
-    performance: [72, 68, 65, 70, 62],
-  },
-  {
-    id: 4,
-    name: 'FineFinish Electrical',
-    trade: 'M&E — Electrical',
-    rating: 4.6,
-    projects: ['Battersea Phase 2', 'Bristol Harbour Bridge'],
-    defectRate: 2.1,
-    avgResponse: 1.8,
-    cscsCompliant: true,
-    status: 'Preferred',
-    value: '£1.8M',
-    contacts: [{ name: 'Anna Kowalski', phone: '+44 7700 456789', email: 'anna@finefinish.com' }],
-    performance: [94, 96, 93, 95, 97],
-  },
-  {
-    id: 5,
-    name: 'Apex Scaffolding Services',
-    trade: 'Scaffolding',
-    rating: 3.8,
-    projects: ['Bristol Harbour Bridge'],
-    defectRate: 4.2,
-    avgResponse: 3.1,
-    cscsCompliant: false,
-    status: 'Approved',
-    value: '£480K',
-    contacts: [{ name: 'Tom Hughes', phone: '+44 7700 567890', email: 'tom@apexscaffolding.co.uk' }],
-    performance: [80, 78, 82, 75, 79],
-  },
-  {
-    id: 6,
-    name: 'Continental Steel UK',
-    trade: 'Steel Supply',
-    rating: 4.0,
-    projects: ['Manchester Metro Hub', 'Birmingham Central Plaza'],
-    defectRate: 0.8,
-    avgResponse: 6.0,
-    cscsCompliant: true,
-    status: 'Approved',
-    value: '£4.2M',
-    contacts: [{ name: 'Sarah Jones', phone: '+44 7700 678901', email: 'sjones@continentalsteel.co.uk' }],
-    performance: [91, 88, 85, 90, 87],
-  },
-  {
-    id: 7,
-    name: 'Northern Brickwork Solutions',
-    trade: 'Bricklayers',
-    rating: 4.4,
-    projects: ['Leeds Green Park', 'Newcastle Innovation Centre'],
-    defectRate: 2.8,
-    avgResponse: 2.0,
-    cscsCompliant: true,
-    status: 'Preferred',
-    value: '£2.9M',
-    contacts: [{ name: 'James O\'Brien', phone: '+44 7700 789012', email: 'james@northernbrickwork.co.uk' }],
-    performance: [92, 90, 88, 91, 93],
-  },
-  {
-    id: 8,
-    name: 'Clearwater M&E Systems',
-    trade: 'M&E — Full Package',
-    rating: 4.1,
-    projects: ['Birmingham Central Plaza'],
-    defectRate: 3.2,
-    avgResponse: 3.8,
-    cscsCompliant: true,
-    status: 'Approved',
-    value: '£5.6M',
-    contacts: [{ name: 'Rachel Kim', phone: '+44 7700 890123', email: 'rkim@clearwaterme.com' }],
-    performance: [86, 84, 88, 82, 87],
-  },
-]
+import useAppStore from '../store/appStore'
 
 const statusColors = {
   'Preferred': 'bg-emerald-100 text-emerald-700',
@@ -133,15 +19,49 @@ const statusBadge = {
 }
 
 export default function Subcontractors() {
+  const { subcontractors, subcontractorsLoading, fetchSubcontractors } = useAppStore()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [expanded, setExpanded] = useState(null)
+
+  useEffect(() => {
+    fetchSubcontractors()
+  }, [fetchSubcontractors])
 
   const filtered = subcontractors.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.trade.toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'All' || s.status === statusFilter
     return matchSearch && matchStatus
   })
+
+  if (subcontractorsLoading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 size={32} className="animate-spin text-orange-500" />
+      </div>
+    )
+  }
+
+  if (!subcontractors || subcontractors.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-slate-800 text-2xl font-bold">Subcontractors</h1>
+            <p className="text-slate-500 text-sm">Manage your subcontractor network</p>
+          </div>
+          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold rounded-lg shadow hover:from-orange-600 hover:to-orange-700 transition-all">
+            <Plus size={16} /> Add Subcontractor
+          </button>
+        </div>
+        <div className="text-center py-16 bg-white rounded-xl border border-orange-200 shadow-sm">
+          <Users size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-slate-600 text-lg font-semibold mb-1">No data yet</h3>
+          <p className="text-slate-400 text-sm">Connect the backend to see live data</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -289,7 +209,7 @@ export default function Subcontractors() {
                 {sc.status === 'On Notice' && (
                   <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
                     <p className="text-amber-700 text-xs font-semibold mb-1">Performance Improvement Plan Active</p>
-                    <p className="text-amber-600 text-[10px]">PD Plumbing has 60 days to improve defect rate below 5%. Review date: 15 July 2026.</p>
+                    <p className="text-amber-600 text-[10px]">This subcontractor has 60 days to improve defect rate below 5%.</p>
                   </div>
                 )}
               </div>

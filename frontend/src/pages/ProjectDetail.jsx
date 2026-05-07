@@ -1,22 +1,52 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Building2, ArrowLeft, MapPin, User, Calendar, TrendingUp, TrendingDown,
-  Clock, Wallet, GitBranch, Users, ShieldCheck, FileText, BotMessageSquare
+  Clock, Wallet, GitBranch, Users, ShieldCheck, FileText, BotMessageSquare, Loader2, AlertTriangle
 } from 'lucide-react'
-import { projects, budget, resources, ganttTasks, weeks } from '../data/mockData'
+import useAppStore from '../store/appStore'
 
 export default function ProjectDetail() {
   const { id } = useParams()
-  const project = projects.find(p => p.id === Number(id))
   const [tab, setTab] = useState('overview')
 
-  if (!project) return (
+  const currentProject = useAppStore(s => s.currentProject)
+  const currentProjectLoading = useAppStore(s => s.currentProjectLoading)
+  const budget = useAppStore(s => s.budget)
+  const resources = useAppStore(s => s.resources)
+  const ganttTasks = useAppStore(s => s.ganttTasks)
+  const fetchProjectById = useAppStore(s => s.fetchProjectById)
+  const fetchBudget = useAppStore(s => s.fetchBudget)
+  const fetchResources = useAppStore(s => s.fetchResources)
+  const fetchGanttTasks = useAppStore(s => s.fetchGanttTasks)
+
+  useEffect(() => {
+    fetchProjectById(id)
+    if (budget.length === 0) fetchBudget()
+    if (resources.length === 0) fetchResources()
+    if (ganttTasks.length === 0) fetchGanttTasks()
+  }, [id])
+
+  if (currentProjectLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin text-orange-500 mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">Loading project details…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentProject) return (
     <div className="text-center py-20">
+      <AlertTriangle size={32} className="mx-auto text-slate-300 mb-3" />
       <p className="text-slate-500">Project not found.</p>
       <Link to="/projects" className="text-orange-500 text-sm font-semibold mt-2 inline-block">← Back to Projects</Link>
     </div>
   )
+
+  const project = currentProject
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
@@ -49,7 +79,7 @@ export default function ProjectDetail() {
               <h1 className="text-slate-800 text-xl font-bold">{project.name}</h1>
               <p className="text-slate-500 text-sm mt-0.5">{project.client}</p>
               <div className="flex items-center gap-3 mt-2">
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${statusColors[project.status]}`}>{project.status}</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${statusColors[project.status] || 'bg-slate-100 text-slate-700'}`}>{project.status}</span>
                 <span className="flex items-center gap-1 text-slate-400 text-xs"><MapPin size={12} /> {project.location}</span>
                 <span className="flex items-center gap-1 text-slate-400 text-xs"><Calendar size={12} /> {project.startDate} — {project.endDate}</span>
               </div>
@@ -120,6 +150,7 @@ export default function ProjectDetail() {
                   </div>
                 </div>
               ))}
+              {budget.length === 0 && <p className="text-slate-400 text-sm text-center py-4">No budget data</p>}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-orange-200 shadow-sm p-5">
@@ -136,6 +167,7 @@ export default function ProjectDetail() {
                   </div>
                 </div>
               ))}
+              {resources.length === 0 && <p className="text-slate-400 text-sm text-center py-4">No resource data</p>}
             </div>
           </div>
         </div>
@@ -163,6 +195,7 @@ export default function ProjectDetail() {
                 </div>
               </div>
             ))}
+            {ganttTasks.length === 0 && <p className="text-slate-400 text-sm text-center py-4">No programme data</p>}
           </div>
           <div className="mt-4 grid grid-cols-4 gap-4 pt-4 border-t border-slate-100">
             <div><p className="text-slate-400 text-xs">SPI</p><p className="text-slate-800 font-bold text-lg">{project.spi}</p></div>
@@ -194,6 +227,7 @@ export default function ProjectDetail() {
                 </div>
               </div>
             ))}
+            {budget.length === 0 && <p className="text-slate-400 text-sm text-center py-4">No budget data</p>}
           </div>
           <div className="mt-4 flex gap-4 text-xs text-slate-400 pt-3 border-t border-slate-100">
             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-orange-500 rounded" /> Spent</span>

@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import { useFormik } from 'formik'
+import { z } from 'zod'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -7,10 +9,9 @@ import {
   TrendingUp, Shield, Users, DollarSign, Clock, AlertCircle,
   CheckCircle2, Target, Lightbulb, BarChart3
 } from 'lucide-react'
+import useAppStore from '../store/appStore'
 
 const API_BASE = 'http://138.252.201.18:7997'
-const STORAGE_KEY = 'rsw_construction_ai_conversations'
-const ACTIVE_KEY = 'rsw_construction_ai_active'
 
 const CATEGORIES = [
   { label: 'Project Intelligence', icon: TrendingUp, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-600' },
@@ -34,57 +35,25 @@ const PRESETS = [
   { label: 'Market Opportunity', category: 'Market Intelligence', icon: Lightbulb, prompt: 'Based on UK construction market data: £170-185B output, 40-50% projects delayed, only 15-20% digitally mature. Where is RainStreamWeb\'s entry point?' },
 ]
 
-function formatDate(iso) {
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
+const chatSchema = z.object({
+  message: z.string().min(1, 'Message cannot be empty'),
+})
 
 export default function AIAssistant() {
-  const [conversations, setConversations] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  })
-  const [activeId, setActiveId] = useState(() => localStorage.getItem(ACTIVE_KEY) || null)
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const aiMessages = useAppStore(s => s.aiMessages)
+  const aiLoading = useAppStore(s => s.aiLoading)
+  const sendAiChat = useAppStore(s => s.sendAiChat)
+  const clearAiMessages = useAppStore(s => s.clearAiMessages)
+
   const [hermesStatus, setHermesStatus] = useState('checking')
   const [activeTab, setActiveTab] = useState('chat')
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0].label)
   const chatEndRef = useRef(null)
 
-  // Load active conversation
-  useEffect(() => {
-    if (activeId) {
-      const conv = conversations.find(c => c.id === activeId)
-      if (conv) setMessages(conv.messages)
-      else {
-        setMessages([])
-        localStorage.removeItem(ACTIVE_KEY)
-        setActiveId(null)
-      }
-    } else {
-      setMessages([])
-    }
-  }, [activeId])
-
-  // Save conversations to localStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations))
-  }, [conversations])
-
-  // Save active conversation messages
-  useEffect(() => {
-    if (!activeId || messages.length === 0) return
-    setConversations(prev => prev.map(c => c.id === activeId ? { ...c, messages, updatedAt: new Date().toISOString() } : c))
-  }, [messages])
-
   // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [aiMessages, aiLoading])
 
   // Health check
   useEffect(() => {
@@ -101,135 +70,26 @@ export default function AIAssistant() {
     }
   }
 
-  const startNewConversation = () => {
-    const id = Date.now().toString()
-    const conv = { id, title: 'New conversation', messages: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    setConversations(prev => [conv, ...prev])
-    setActiveId(id)
-    setMessages([])
-    setInput('')
-    localStorage.setItem(ACTIVE_KEY, id)
-  }
-
-  const deleteConversation = (id, e) => {
-    e.stopPropagation()
-    setConversations(prev => prev.filter(c => c.id !== id))
-    if (activeId === id) {
-      const remaining = conversations.filter(c => c.id !== id)
-      if (remaining.length > 0) {
-        setActiveId(remaining[0].id)
-        localStorage.setItem(ACTIVE_KEY, remaining[0].id)
-      } else {
-        setActiveId(null)
-        setMessages([])
-        localStorage.removeItem(ACTIVE_KEY)
-      }
-    }
-  }
-
-  const selectConversation = (id) => {
-    setActiveId(id)
-    localStorage.setItem(ACTIVE_KEY, id)
-  }
-
-  const callHermes = async (userMessage, history) => {
-    const systemPrompt = `You are the RainStreamWeb AI assistant for the UK construction industry. You have deep knowledge of:
-- UK construction market (£170-185B, 300K+ firms, 1.4-1.7M workforce)
-- Project management: Gantt charts, SPI/CPI, critical path, delay analysis
-- H&S: CDM 2015, Building Safety Act 2022 Golden Thread, RIDDOR, PPE compliance
-- Labour: CSCS, subcontractor management, 50K+ vacancies in UK construction
-- Contracts: JCT, NEC, main contractor vs subcontractor dynamics
-- Commercial: interim valuations, variations, tendering, BoQ
-- UK firms: Balfour Beatty, ISG, Bowmer + Kirkland, Morgan Sindall, Mace, Kier
-
-Keep responses concise, actionable, and UK-market specific. Use numbered lists for recommendations. Format your responses using markdown (headings, bold, lists, code blocks).`
-
-    const res = await fetch(`${API_BASE}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('hermes_api_key') || 'demo-key'}`
-      },
-      body: JSON.stringify({
-        model: 'hermes',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...history.map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content: userMessage }
-        ],
-        max_tokens: 800,
-        temperature: 0.7
-      }),
-      signal: AbortSignal.timeout(30000)
-    })
-    if (!res.ok) throw new Error(`Hermes ${res.status}`)
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || 'No response received.'
-  }
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-
-    // Auto-create conversation if none active
-    let convId = activeId
-    if (!convId) {
-      const id = Date.now().toString()
-      const conv = { id, title: input.slice(0, 40), messages: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-      setConversations(prev => [conv, ...prev])
-      setActiveId(id)
-      setMessages([])
-      convId = id
-      localStorage.setItem(ACTIVE_KEY, id)
-    }
-
-    const userMsg = { role: 'user', content: input, timestamp: new Date().toISOString() }
-    const currentHistory = [...messages, userMsg]
-    setMessages(currentHistory)
-    setInput('')
-    setLoading(true)
-
-    // Update conversation title if first message
-    if (currentHistory.length === 1) {
-      const title = input.slice(0, 40)
-      setConversations(prev => prev.map(c => c.id === convId ? { ...c, title } : c))
-    }
-
-    try {
-      const reply = await callHermes(input, currentHistory)
-      setMessages(prev => [...prev, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '**Connection failed.**\n\nCould not reach Hermes on port 7997. Check that the gateway is running.', timestamp: new Date().toISOString() }])
-    } finally {
-      setLoading(false)
-    }
+  const handleNewChat = () => {
+    clearAiMessages()
   }
 
   const runPreset = async (preset) => {
-    const userMsg = { role: 'user', content: preset.prompt, timestamp: new Date().toISOString() }
-    const currentHistory = [...messages, userMsg]
-    setMessages(currentHistory)
-    setLoading(true)
-
-    // Auto-create conversation
-    let convId = activeId
-    if (!convId) {
-      const id = Date.now().toString()
-      const conv = { id, title: preset.label, messages: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-      setConversations(prev => [conv, ...prev])
-      setActiveId(id)
-      convId = id
-      localStorage.setItem(ACTIVE_KEY, id)
-    }
-
-    try {
-      const reply = await callHermes(preset.prompt, currentHistory)
-      setMessages(prev => [...prev, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '**Connection failed.**\n\nCould not reach Hermes on port 7997.', timestamp: new Date().toISOString() }])
-    } finally {
-      setLoading(false)
-    }
+    await sendAiChat(preset.prompt)
   }
+
+  const formik = useFormik({
+    initialValues: { message: '' },
+    validate: (values) => {
+      const result = chatSchema.safeParse(values)
+      if (result.success) return {}
+      return Object.fromEntries(result.error.issues.map(i => [i.path.join('.'), i.message]))
+    },
+    onSubmit: (values, { resetForm }) => {
+      sendAiChat(values.message)
+      resetForm()
+    },
+  })
 
   const statusConfig = {
     online: { color: 'bg-green-500', text: 'Online', pulse: true },
@@ -244,29 +104,21 @@ Keep responses concise, actionable, and UK-market specific. Use numbered lists f
     <div className="flex gap-6 h-[calc(100vh-160px)]">
       {/* Sidebar */}
       <div className="w-64 flex-shrink-0 flex flex-col gap-3">
-        <button onClick={startNewConversation}
+        <button onClick={handleNewChat}
           className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold shadow transition-all">
           <Plus size={14} /> New Conversation
         </button>
 
         <div className="flex-1 overflow-y-auto space-y-1">
-          {conversations.length === 0 && (
-            <p className="text-slate-400 text-xs text-center py-8">No conversations yet.<br />Start a new one above.</p>
+          {aiMessages.length === 0 && (
+            <p className="text-slate-400 text-xs text-center py-8">No messages yet.<br />Start a conversation.</p>
           )}
-          {conversations.map(conv => (
-            <button key={conv.id} onClick={() => selectConversation(conv.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all group flex items-center gap-2 ${
-                activeId === conv.id ? 'bg-orange-50 border border-orange-200' : 'hover:bg-slate-50 border border-transparent'
-              }`}>
-              <MessageSquare size={12} className={activeId === conv.id ? 'text-orange-500 flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
-              <span className={`flex-1 truncate ${activeId === conv.id ? 'text-orange-700 font-semibold' : 'text-slate-600'}`}>{conv.title}</span>
-              <span className="text-slate-300 text-[10px] hidden group-hover:block">{formatDate(conv.updatedAt)}</span>
-              <button onClick={(e) => deleteConversation(conv.id, e)}
-                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity">
-                <Trash2 size={11} />
-              </button>
-            </button>
-          ))}
+          {aiMessages.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+              <p className="text-orange-700 text-xs font-semibold">Active Conversation</p>
+              <p className="text-orange-500 text-[10px] mt-0.5">{aiMessages.length} messages</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -320,7 +172,7 @@ Keep responses concise, actionable, and UK-market specific. Use numbered lists f
 
             <div className="flex-1 bg-white rounded-xl border border-orange-200 shadow flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                {messages.length === 0 && (
+                {aiMessages.length === 0 && (
                   <div className="text-center py-12">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center mx-auto mb-4">
                       <BotMessageSquare size={24} className="text-orange-500" />
@@ -330,7 +182,7 @@ Keep responses concise, actionable, and UK-market specific. Use numbered lists f
                   </div>
                 )}
 
-                {messages.map((m, i) => (
+                {aiMessages.map((m, i) => (
                   <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                     {m.role === 'assistant' && (
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -349,7 +201,7 @@ Keep responses concise, actionable, and UK-market specific. Use numbered lists f
                   </div>
                 ))}
 
-                {loading && (
+                {aiLoading && (
                   <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
                       <BotMessageSquare className="text-white" size={14} />
@@ -366,21 +218,31 @@ Keep responses concise, actionable, and UK-market specific. Use numbered lists f
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="p-4 border-t border-orange-100">
+              <form onSubmit={formik.handleSubmit} className="p-4 border-t border-orange-100">
                 <div className="flex gap-2">
                   <input
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+                    name="message"
+                    value={formik.values.message}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        formik.handleSubmit()
+                      }
+                    }}
                     placeholder="Ask about delays, H&S, labour, costs, CDM compliance..."
                     className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-orange-400"
                   />
-                  <button onClick={handleSend} disabled={!input.trim() || loading}
+                  <button type="submit" disabled={!formik.values.message.trim() || aiLoading}
                     className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all shadow">
                     <Send size={16} />
                   </button>
                 </div>
-              </div>
+                {formik.touched.message && formik.errors.message && (
+                  <p className="text-red-500 text-[10px] mt-1">{formik.errors.message}</p>
+                )}
+              </form>
             </div>
           </>
         )}
@@ -406,7 +268,7 @@ Keep responses concise, actionable, and UK-market specific. Use numbered lists f
               {currentCategoryPresets.map((preset, idx) => {
                 const cat = CATEGORIES.find(c => c.label === preset.category)
                 return (
-                  <button key={idx} onClick={() => runPreset(preset)} disabled={loading}
+                  <button key={idx} onClick={() => runPreset(preset)} disabled={aiLoading}
                     className={`p-4 rounded-xl border text-left transition-all hover:shadow-md disabled:opacity-50 ${cat?.bg} hover:-translate-y-0.5`}>
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/80 shadow-sm">

@@ -1,30 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Camera, Upload, Download, Calendar, Filter, Search,
-  ChevronLeft, ChevronRight, Maximize2, MapPin, Clock, Image
+  ChevronLeft, ChevronRight, Maximize2, MapPin, Clock, Image, Loader2
 } from 'lucide-react'
-
-const photos = [
-  { id: 1, project: 'Battersea Phase 2', location: 'Floor 12 — Steel Frame', date: '26 Apr 2026', author: 'Tom Mitchell', views: 42, category: 'Progress', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80' },
-  { id: 2, project: 'Battersea Phase 2', location: 'Floor 8 — Concrete Pour', date: '25 Apr 2026', author: 'James Whitfield', views: 38, category: 'Construction', url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80' },
-  { id: 3, project: 'Manchester Metro Hub', location: 'Groundworks — UXO Survey', date: '24 Apr 2026', author: 'Sarah Collins', views: 56, category: 'Technical', url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' },
-  { id: 4, project: 'Bristol Harbour Bridge', location: 'Main Span — Tower Crane', date: '23 Apr 2026', author: 'James Whitfield', views: 89, category: 'Progress', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80' },
-  { id: 5, project: 'Leeds Green Park', location: 'Site Entrance — Welfare', date: '22 Apr 2026', author: 'Priya Sharma', views: 21, category: 'Welfare', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80' },
-  { id: 6, project: 'Battersea Phase 2', location: 'M&E First Fix — Floor 5', date: '21 Apr 2026', author: 'Tom Mitchell', views: 33, category: 'M&E', url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' },
-  { id: 7, project: 'Birmingham Central Plaza', location: 'Cladding Panel Installation', date: '20 Apr 2026', author: 'Rachel Okafor', views: 47, category: 'Cladding', url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80' },
-  { id: 8, project: 'Manchester Metro Hub', location: 'Steel Erection — Bay 7', date: '19 Apr 2026', author: 'Sarah Collins', views: 62, category: 'Construction', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80' },
-  { id: 9, project: 'Bristol Harbour Bridge', location: 'Pile Cap — Pouring Concrete', date: '18 Apr 2026', author: 'James Whitfield', views: 71, category: 'Progress', url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' },
-  { id: 10, project: 'Newcastle Innovation Centre', location: 'Site Setup — hoardings', date: '17 Apr 2026', author: 'Alex Thornton', views: 15, category: 'Site Setup', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80' },
-]
+import useAppStore from '../store/appStore'
 
 const categories = ['All', 'Progress', 'Construction', 'M&E', 'Cladding', 'Technical', 'Welfare', 'Site Setup']
 const projects = ['All Projects', 'Battersea Phase 2', 'Manchester Metro Hub', 'Bristol Harbour Bridge', 'Leeds Green Park', 'Birmingham Central Plaza', 'Newcastle Innovation Centre']
 
 export default function SitePhotos() {
+  const { sitePhotos, sitePhotosLoading, fetchSitePhotos } = useAppStore()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('All')
   const [projFilter, setProjFilter] = useState('All Projects')
-  const [gallery, setGallery] = useState(null) // photo index for fullscreen gallery
+  const [gallery, setGallery] = useState(null)
+
+  useEffect(() => {
+    fetchSitePhotos()
+  }, [fetchSitePhotos])
+
+  const photos = sitePhotos || []
 
   const filtered = photos.filter(p => {
     const matchSearch = p.location.toLowerCase().includes(search.toLowerCase()) || p.project.toLowerCase().includes(search.toLowerCase())
@@ -32,6 +27,40 @@ export default function SitePhotos() {
     const matchProj = projFilter === 'All Projects' || p.project === projFilter
     return matchSearch && matchCat && matchProj
   })
+
+  if (sitePhotosLoading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 size={32} className="animate-spin text-orange-500" />
+      </div>
+    )
+  }
+
+  if (photos.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-slate-800 text-2xl font-bold">Site Photography</h1>
+            <p className="text-slate-500 text-sm">Photo management across projects</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-50 transition-colors">
+              <Download size={15} /> Export All
+            </button>
+            <button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold rounded-lg shadow hover:from-orange-600 hover:to-orange-700 transition-all">
+              <Upload size={15} /> Upload Photos
+            </button>
+          </div>
+        </div>
+        <div className="text-center py-16 bg-white rounded-xl border border-orange-200 shadow-sm">
+          <Camera size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-slate-600 text-lg font-semibold mb-1">No data yet</h3>
+          <p className="text-slate-400 text-sm">Connect the backend to see live data</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -118,7 +147,7 @@ export default function SitePhotos() {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {filtered.length === 0 && photos.length > 0 && (
         <div className="text-center py-12 bg-white rounded-xl border border-orange-200">
           <Camera size={40} className="mx-auto text-slate-300 mb-3" />
           <p className="text-slate-500">No photos match your filters</p>

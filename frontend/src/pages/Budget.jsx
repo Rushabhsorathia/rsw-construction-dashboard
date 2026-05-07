@@ -1,8 +1,24 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { Wallet, Download, TrendingUp, TrendingDown } from 'lucide-react'
-import { budget } from '../data/mockData'
+import useAppStore from '../store/appStore'
 
 export default function Budget() {
+  const budget = useAppStore(s => s.budget)
+  const budgetLoading = useAppStore(s => s.budgetLoading)
+  const fetchBudget = useAppStore(s => s.fetchBudget)
+
+  useEffect(() => {
+    if (budget.length === 0) fetchBudget()
+  }, [])
+
+  if (budgetLoading && budget.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   const totalBudget = budget.reduce((s, b) => s + b.budget, 0)
   const totalSpent = budget.reduce((s, b) => s + b.spent, 0)
   const totalCommitted = budget.reduce((s, b) => s + b.committed, 0)

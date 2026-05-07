@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { GitBranch, Download, Plus, ChevronRight } from 'lucide-react'
-import { ganttTasks, weeks, phases } from '../data/mockData'
+import useAppStore from '../store/appStore'
 
 const phaseColors = {
   1: { bar: 'bg-emerald-500', label: 'Phase 1 — Structure', complete: 'bg-emerald-600' },
@@ -11,9 +11,35 @@ const phaseColors = {
   5: { bar: 'bg-purple-500', label: 'Phase 5 — Handover', complete: 'bg-purple-600' },
 }
 
+const phases = [
+  { name: 'Phase 1 — Structure', color: 'bg-emerald-500' },
+  { name: 'Phase 2 — Envelope', color: 'bg-blue-500' },
+  { name: 'Phase 3 — First Fix', color: 'bg-blue-400' },
+  { name: 'Phase 4 — Second Fix', color: 'bg-orange-500' },
+  { name: 'Phase 5 — Handover', color: 'bg-purple-500' },
+]
+
+const weeks = Array.from({ length: 26 }, (_, i) => i + 1)
+
 export default function Gantt() {
   const [selectedPhase, setSelectedPhase] = useState(null)
   const today = 9 // Week 9 marker
+
+  const ganttTasks = useAppStore(s => s.ganttTasks)
+  const ganttTasksLoading = useAppStore(s => s.ganttTasksLoading)
+  const fetchGanttTasks = useAppStore(s => s.fetchGanttTasks)
+
+  useEffect(() => {
+    if (ganttTasks.length === 0) fetchGanttTasks()
+  }, [])
+
+  if (ganttTasksLoading && ganttTasks.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

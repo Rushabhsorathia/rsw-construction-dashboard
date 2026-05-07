@@ -1,134 +1,55 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   AlertTriangle, Shield, TrendingUp, TrendingDown, Plus, Filter,
-  ChevronDown, Clock, Users, MapPin, DollarSign, Calendar
+  ChevronDown, Clock, Users, MapPin, DollarSign, Calendar, Loader2
 } from 'lucide-react'
-
-const risks = [
-  {
-    id: 1,
-    title: 'Steel Delivery Delay — Continental Steel',
-    project: 'Manchester Metro Hub',
-    category: 'Supply Chain',
-    likelihood: 4,
-    impact: 4,
-    score: 16,
-    owner: 'Sarah Collins',
-    status: 'High',
-    due: '15 May 2026',
-    mitigation: 'Source backup supplier from British Steel. Pre-order next batch. Maintain 2-week buffer stock on site.',
-    contingency: 'PD Steel UK — 3-week lead time, premium 8%',
-  },
-  {
-    id: 2,
-    title: 'Planning Permission Risk — Leeds Green Park',
-    project: 'Leeds Green Park',
-    category: 'External',
-    likelihood: 3,
-    impact: 5,
-    score: 15,
-    owner: 'Priya Sharma',
-    status: 'High',
-    due: '30 May 2026',
-    mitigation: 'Engage planning consultant early. Pre-application meeting with Leeds City Council. Prepare community benefits package.',
-    contingency: 'Appeal process — 6-month delay, £180K additional costs',
-  },
-  {
-    id: 3,
-    title: 'Labour Shortage — Scaffolders Bristol',
-    project: 'Bristol Harbour Bridge',
-    category: 'Labour',
-    likelihood: 5,
-    impact: 3,
-    score: 15,
-    owner: 'James Whitfield',
-    status: 'High',
-    due: 'Ongoing',
-    mitigation: 'Source 2 backup scaffolders via CFAA. Brief recruitment agency. Offer retention bonus.',
-    contingency: 'Use mobile access towers for non-critical areas — slower but prevents delay',
-  },
-  {
-    id: 4,
-    title: 'Groundworks Unexpected UXO — Manchester',
-    project: 'Manchester Metro Hub',
-    category: 'Technical',
-    likelihood: 2,
-    impact: 5,
-    score: 10,
-    owner: 'Sarah Collins',
-    status: 'Medium',
-    due: 'Completed',
-    mitigation: 'Commission UXO survey before works. Brief groundworks team on emergency procedure.',
-    contingency: 'UXO discovered — 3-week delay, £85K remediation cost (insurance covered 80%)',
-  },
-  {
-    id: 5,
-    title: 'Material Price Inflation — Above Budget 8%',
-    project: 'All Projects',
-    category: 'Commercial',
-    likelihood: 4,
-    impact: 3,
-    score: 12,
-    owner: 'Tom Mitchell',
-    status: 'Medium',
-    due: 'Ongoing',
-    mitigation: 'Forward-order steel and concrete. Lock in prices quarterly. Review BoQ rates monthly.',
-    contingency: 'Variation claims to client. Budget contingency release.',
-  },
-  {
-    id: 6,
-    title: 'Subcontractor Insolvency — cladding firm',
-    project: 'Battersea Phase 2',
-    category: 'Financial',
-    likelihood: 2,
-    impact: 4,
-    score: 8,
-    owner: 'Tom Mitchell',
-    status: 'Low',
-    due: 'Ongoing',
-    mitigation: 'Monitor subcontractor financial health. Take bonds/parent company guarantees on large packages.',
-    contingency: 'Pre-qualify 2 backup cladding firms. Contract allows step-in rights.',
-  },
-  {
-    id: 7,
-    title: 'Weather Delays — Q2 2026',
-    project: 'Bristol Harbour Bridge',
-    category: 'External',
-    likelihood: 3,
-    impact: 2,
-    score: 6,
-    owner: 'James Whitfield',
-    status: 'Low',
-    due: '30 Jun 2026',
-    mitigation: 'Programme float of 14 days. Weather-sensitive activities scheduled May-Sep.',
-    contingency: 'Extension of time claim under JCT. Client notified.',
-  },
-  {
-    id: 8,
-    title: 'CDM Compliance Gap — H&S File Missing',
-    project: 'Leeds Green Park',
-    category: 'Compliance',
-    likelihood: 3,
-    impact: 3,
-    score: 9,
-    owner: 'Priya Sharma',
-    status: 'Medium',
-    due: '20 May 2026',
-    mitigation: 'Assign H&S File responsibility. Commission safety consultant. Set monthly review meetings.',
-    contingency: 'HSE enforcement — prohibition notice, reputational damage',
-  },
-]
+import useAppStore from '../store/appStore'
 
 const categories = ['All', 'Supply Chain', 'External', 'Labour', 'Technical', 'Commercial', 'Financial', 'Compliance']
 const statusColors = { High: 'bg-red-100 text-red-700', Medium: 'bg-amber-100 text-amber-700', Low: 'bg-emerald-100 text-emerald-700' }
 
 export default function RiskRegister() {
+  const { riskRegister, riskRegisterLoading, fetchRiskRegister } = useAppStore()
   const [catFilter, setCatFilter] = useState('All')
   const [expanded, setExpanded] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
 
+  useEffect(() => {
+    fetchRiskRegister()
+  }, [fetchRiskRegister])
+
+  const risks = riskRegister || []
   const filtered = risks.filter(r => catFilter === 'All' || r.category === catFilter)
   const total = filtered.reduce((s, r) => s + r.score, 0)
+
+  if (riskRegisterLoading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 size={32} className="animate-spin text-orange-500" />
+      </div>
+    )
+  }
+
+  if (risks.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-slate-800 text-2xl font-bold">Risk Register</h1>
+            <p className="text-slate-500 text-sm">Manage project risks and mitigations</p>
+          </div>
+          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold rounded-lg shadow hover:from-orange-600 hover:to-orange-700 transition-all">
+            <Plus size={16} /> Add Risk
+          </button>
+        </div>
+        <div className="text-center py-16 bg-white rounded-xl border border-orange-200 shadow-sm">
+          <AlertTriangle size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-slate-600 text-lg font-semibold mb-1">No data yet</h3>
+          <p className="text-slate-400 text-sm">Connect the backend to see live data</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -243,7 +164,6 @@ export default function RiskRegister() {
       <div className="bg-white rounded-xl border border-orange-200 shadow-sm p-5">
         <h3 className="text-slate-800 font-semibold mb-4">Risk Matrix — Likelihood vs Impact</h3>
         <div className="grid grid-cols-5 gap-1 relative">
-          {/* Y-axis label */}
           <div className="col-span-5 flex">
             {[5,4,3,2,1].map(y => (
               <div key={y} className="flex-1 text-center text-[10px] text-slate-400 font-medium py-1">{y}</div>

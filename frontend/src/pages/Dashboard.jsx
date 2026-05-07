@@ -1,10 +1,11 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Building2, TrendingUp, TrendingDown, Clock, AlertTriangle,
-  ArrowRight, BotMessageSquare, Shield, Users, Wallet, GitBranch
+  ArrowRight, BotMessageSquare, Shield, Users, Wallet, GitBranch, Loader2
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { projects, budget, resources, healthSafety, aiInsights, projectStats } from '../data/mockData'
+import useAppStore from '../store/appStore'
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -18,12 +19,74 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null
 }
 
+// Hardcoded AI Insights placeholder cards (no API for insights yet)
+const placeholderInsights = [
+  { id: 1, icon: '⚠️', title: 'Supply chain delays detected', message: 'Steel delivery for Meridian Water Phase 2 may be delayed by 2 weeks due to supplier issues.', action: 'Review supply chain' },
+  { id: 2, icon: '📉', title: 'Budget variance alert', message: 'CPI for Chapel Riverside has dropped below 0.95 — cost overrun risk increasing.', action: 'View budget details' },
+  { id: 3, icon: '👷', title: 'Resource shortage flagged', message: 'Bricklayer allocation across London sites is at 94% capacity. Consider rebalancing.', action: 'Manage resources' },
+  { id: 4, icon: '📋', title: 'H&S compliance review', message: '3 sites have upcoming safety audits within the next 14 days that need preparation.', action: 'See health & safety' },
+]
+
 export default function Dashboard() {
-  const totalBudget = projectStats.totalBudget
-  const totalSpent = projectStats.totalSpent
-  const totalCommitted = projectStats.totalCommitted
-  const avgSpi = (projects.reduce((s, p) => s + p.spi, 0) / projects.length).toFixed(2)
-  const avgCpi = (projects.reduce((s, p) => s + p.cpi, 0) / projects.length).toFixed(2)
+  const projects = useAppStore(s => s.projects)
+  const budget = useAppStore(s => s.budget)
+  const projectsLoading = useAppStore(s => s.projectsLoading)
+  const budgetLoading = useAppStore(s => s.budgetLoading)
+  const projectsError = useAppStore(s => s.projectsError)
+  const budgetError = useAppStore(s => s.budgetError)
+  const fetchProjects = useAppStore(s => s.fetchProjects)
+  const fetchBudget = useAppStore(s => s.fetchBudget)
+  const fetchGanttTasks = useAppStore(s => s.fetchGanttTasks)
+
+  useEffect(() => {
+    if (projects.length === 0) fetchProjects()
+    if (budget.length === 0) fetchBudget()
+    fetchGanttTasks()
+  }, [])
+
+  // Derived stats
+  const active = projects.length
+  const atRisk = projects.filter(p => p.status === 'At Risk').length
+  const delayed = projects.filter(p => p.status === 'Delayed').length
+  const totalValue = projects.reduce((s, p) => s + (typeof p.value === 'string' ? parseFloat(p.value.replace(/[^0-9.]/g, '')) : (p.value || 0)), 0)
+
+  const totalBudget = budget.reduce((s, b) => s + (parseFloat(b.budget) || 0), 0)
+  const totalSpent = budget.reduce((s, b) => s + (parseFloat(b.spent) || 0), 0)
+  const totalCommitted = budget.reduce((s, b) => s + (parseFloat(b.committed) || 0), 0)
+
+  const avgSpi = projects.length > 0 ? (projects.reduce((s, p) => s + (p.spi || 0), 0) / projects.length).toFixed(2) : '—'
+  const avgCpi = projects.length > 0 ? (projects.reduce((s, p) => s + (p.cpi || 0), 0) / projects.length).toFixed(2) : '—'
+
+  // Loading / Error states
+  if (projectsLoading || budgetLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin text-orange-500 mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">Loading dashboard data…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (projectsError || budgetError) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertTriangle size={32} className="text-red-400 mx-auto mb-3" />
+          <p className="text-slate-600 font-medium">Failed to load dashboard data</p>
+          {projectsError && <p className="text-slate-400 text-xs mt-1">{projectsError}</p>}
+          {budgetError && <p className="text-slate-400 text-xs mt-1">{budgetError}</p>}
+          <button
+            onClick={() => { fetchProjects(); fetchBudget() }}
+            className="mt-3 px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -42,10 +105,10 @@ export default function Dashboard() {
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Active Projects', value: projectStats.active, icon: Building2, color: 'text-orange-500', bg: 'bg-orange-50', change: '+2 this quarter' },
-          { label: 'Total Portfolio Value', value: `£${projectStats.totalValue.toFixed(1)}M`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50', change: 'Across 4 regions' },
-          { label: 'Projects At Risk', value: projectStats.atRisk, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50', change: `${projectStats.delayed} also delayed` },
-          { label: 'Avg Schedule Perf.', value: avgSpi, icon: TrendingUp, color: avgSpi >= 1 ? 'text-emerald-500' : 'text-amber-500', bg: avgSpi >= 1 ? 'bg-emerald-50' : 'bg-amber-50', change: avgSpi >= 1 ? 'On schedule' : 'Behind schedule' },
+          { label: 'Active Projects', value: active, icon: Building2, color: 'text-orange-500', bg: 'bg-orange-50', change: `Across portfolio` },
+          { label: 'Total Portfolio Value', value: `£${totalValue.toFixed(1)}M`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50', change: `${projects.length} projects` },
+          { label: 'Projects At Risk', value: atRisk, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50', change: `${delayed} also delayed` },
+          { label: 'Avg Schedule Perf.', value: avgSpi, icon: TrendingUp, color: Number(avgSpi) >= 1 ? 'text-emerald-500' : 'text-amber-500', bg: Number(avgSpi) >= 1 ? 'bg-emerald-50' : 'bg-amber-50', change: Number(avgSpi) >= 1 ? 'On schedule' : 'Behind schedule' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl p-5 border border-orange-200 shadow-sm">
             <div className="flex items-center justify-between mb-3">
@@ -91,8 +154,8 @@ export default function Dashboard() {
           <div className="space-y-3">
             {[
               { label: 'Total Budget', value: totalBudget, color: 'text-slate-800', pct: 100 },
-              { label: 'Committed', value: totalCommitted, color: 'text-blue-500', pct: (totalCommitted / totalBudget) * 100 },
-              { label: 'Spent', value: totalSpent, color: 'text-orange-500', pct: (totalSpent / totalBudget) * 100 },
+              { label: 'Committed', value: totalCommitted, color: 'text-blue-500', pct: totalBudget > 0 ? (totalCommitted / totalBudget) * 100 : 0 },
+              { label: 'Spent', value: totalSpent, color: 'text-orange-500', pct: totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0 },
             ].map(b => (
               <div key={b.label}>
                 <div className="flex justify-between text-xs mb-1">
@@ -100,7 +163,7 @@ export default function Dashboard() {
                   <span className={b.color}>£{b.value.toFixed(1)}M</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${b.label === 'Total Budget' ? 'bg-slate-400' : b.label === 'Committed' ? 'bg-blue-400' : 'bg-orange-500'}`} style={{ width: `${b.pct}%` }} />
+                  <div className={`h-full rounded-full ${b.label === 'Total Budget' ? 'bg-slate-400' : b.label === 'Committed' ? 'bg-blue-400' : 'bg-orange-500'}`} style={{ width: `${Math.min(b.pct, 100)}%` }} />
                 </div>
               </div>
             ))}
@@ -129,7 +192,7 @@ export default function Dashboard() {
             {projects.slice(0, 4).map(p => (
               <Link key={p.id} to={`/projects/${p.id}`} className="flex items-center justify-between p-3 bg-orange-50/50 hover:bg-orange-50 rounded-lg transition-colors border border-orange-100">
                 <div>
-                  <p className="text-slate-800 text-sm font-semibold">{p.name.split(' — ')[0]}</p>
+                  <p className="text-slate-800 text-sm font-semibold">{p.name?.split(' — ')[0]}</p>
                   <p className="text-slate-500 text-xs">{p.client}</p>
                 </div>
                 <div className="text-right">
@@ -142,6 +205,9 @@ export default function Dashboard() {
                 </div>
               </Link>
             ))}
+            {projects.length === 0 && (
+              <p className="text-slate-400 text-sm text-center py-4">No projects loaded yet</p>
+            )}
           </div>
         </div>
 
@@ -155,7 +221,7 @@ export default function Dashboard() {
             <Link to="/ai-assistant" className="text-orange-500 hover:text-orange-600 text-xs font-medium flex items-center gap-1">AI Chat <ArrowRight size={12} /></Link>
           </div>
           <div className="space-y-3">
-            {aiInsights.filter(i => i.priority === 'high').slice(0, 4).map(i => (
+            {placeholderInsights.map(i => (
               <div key={i.id} className="p-3 bg-red-50/60 rounded-lg border border-red-100">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-base">{i.icon}</span>
