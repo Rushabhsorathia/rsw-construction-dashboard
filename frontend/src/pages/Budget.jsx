@@ -3,15 +3,15 @@ import { Wallet, Download, TrendingUp, TrendingDown } from 'lucide-react'
 import useAppStore from '../store/appStore'
 
 export default function Budget() {
-  const budget = useAppStore(s => s.budget)
+  const budget = useAppStore(s => s.budget) || []
   const budgetLoading = useAppStore(s => s.budgetLoading)
   const fetchBudget = useAppStore(s => s.fetchBudget)
 
   useEffect(() => {
-    if (budget.length === 0) fetchBudget()
+    fetchBudget()
   }, [])
 
-  if (budgetLoading && budget.length === 0) {
+  if (budgetLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />

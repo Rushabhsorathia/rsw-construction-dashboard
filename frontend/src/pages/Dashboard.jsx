@@ -28,8 +28,8 @@ const placeholderInsights = [
 ]
 
 export default function Dashboard() {
-  const projects = useAppStore(s => s.projects)
-  const budget = useAppStore(s => s.budget)
+  const projects = useAppStore(s => s.projects) || []
+  const budget = useAppStore(s => s.budget) || []
   const projectsLoading = useAppStore(s => s.projectsLoading)
   const budgetLoading = useAppStore(s => s.budgetLoading)
   const projectsError = useAppStore(s => s.projectsError)
@@ -39,8 +39,8 @@ export default function Dashboard() {
   const fetchGanttTasks = useAppStore(s => s.fetchGanttTasks)
 
   useEffect(() => {
-    if (projects.length === 0) fetchProjects()
-    if (budget.length === 0) fetchBudget()
+    fetchProjects()
+    fetchBudget()
     fetchGanttTasks()
   }, [])
 

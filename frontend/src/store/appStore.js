@@ -1,124 +1,207 @@
 import { create } from 'zustand'
+import api from '../lib/axios'
 
 const useAppStore = create((set, get) => ({
-  // Subcontractors
+  // Sidebar
+  sidebarOpen: false,
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+
+  // ── Projects ──
+  projects: [],
+  projectsLoading: false,
+  projectsError: null,
+  fetchProjects: async () => {
+    set({ projectsLoading: true, projectsError: null })
+    try {
+      const { data } = await api.get('/api/projects')
+      set({ projects: data.data || data, projectsLoading: false })
+    } catch (err) {
+      set({ projectsError: err?.response?.data?.message || err?.message || 'Failed', projectsLoading: false })
+    }
+  },
+
+  // ── Single Project ──
+  currentProject: null,
+  currentProjectLoading: false,
+  fetchProjectById: async (id) => {
+    set({ currentProjectLoading: true })
+    try {
+      const { data } = await api.get(`/api/projects/${id}`)
+      set({ currentProject: data.data || data, currentProjectLoading: false })
+    } catch {
+      set({ currentProjectLoading: false })
+    }
+  },
+
+  // ── Budget ──
+  budget: [],
+  budgetLoading: false,
+  budgetError: null,
+  fetchBudget: async () => {
+    set({ budgetLoading: true, budgetError: null })
+    try {
+      const { data } = await api.get('/api/budget')
+      set({ budget: data.data || data, budgetLoading: false })
+    } catch (err) {
+      set({ budgetError: err?.response?.data?.message || err?.message || 'Failed', budgetLoading: false })
+    }
+  },
+
+  // ── Resources ──
+  resources: [],
+  resourcesLoading: false,
+  resourcesError: null,
+  fetchResources: async () => {
+    set({ resourcesLoading: true, resourcesError: null })
+    try {
+      const { data } = await api.get('/api/resources')
+      set({ resources: data.data || data, resourcesLoading: false })
+    } catch (err) {
+      set({ resourcesError: err?.response?.data?.message || err?.message || 'Failed', resourcesLoading: false })
+    }
+  },
+
+  // ── Health & Safety ──
+  healthSafety: [],
+  healthSafetyLoading: false,
+  healthSafetyError: null,
+  fetchHealthSafety: async () => {
+    set({ healthSafetyLoading: true, healthSafetyError: null })
+    try {
+      const { data } = await api.get('/api/health-safety')
+      set({ healthSafety: data.data || data, healthSafetyLoading: false })
+    } catch (err) {
+      set({ healthSafetyError: err?.response?.data?.message || err?.message || 'Failed', healthSafetyLoading: false })
+    }
+  },
+
+  // ── Subcontractors ──
   subcontractors: [],
   subcontractorsLoading: false,
   subcontractorsError: null,
   fetchSubcontractors: async () => {
-    if (get().subcontractors.length > 0) return
-    set({ subcontractorsLoading: true })
+    set({ subcontractorsLoading: true, subcontractorsError: null })
     try {
-      const res = await fetch('/api/subcontractors')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ subcontractors: data, subcontractorsLoading: false })
+      const { data } = await api.get('/api/subcontractors')
+      set({ subcontractors: data.data || data, subcontractorsLoading: false })
     } catch (err) {
-      set({ subcontractorsLoading: false, subcontractorsError: err.message })
+      set({ subcontractorsError: err?.response?.data?.message || err?.message || 'Failed', subcontractorsLoading: false })
     }
   },
 
-  // Supply Chain
+  // ── Supply Chain ──
   supplyChain: [],
   supplyChainLoading: false,
   supplyChainError: null,
   fetchSupplyChain: async () => {
-    if (get().supplyChain.length > 0) return
-    set({ supplyChainLoading: true })
+    set({ supplyChainLoading: true, supplyChainError: null })
     try {
-      const res = await fetch('/api/supply-chain')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ supplyChain: data, supplyChainLoading: false })
+      const { data } = await api.get('/api/supply-chain')
+      set({ supplyChain: data.data || data, supplyChainLoading: false })
     } catch (err) {
-      set({ supplyChainLoading: false, supplyChainError: err.message })
+      set({ supplyChainError: err?.response?.data?.message || err?.message || 'Failed', supplyChainLoading: false })
     }
   },
 
-  // Risk Register
+  // ── Risk Register ──
   riskRegister: [],
   riskRegisterLoading: false,
   riskRegisterError: null,
   fetchRiskRegister: async () => {
-    if (get().riskRegister.length > 0) return
-    set({ riskRegisterLoading: true })
+    set({ riskRegisterLoading: true, riskRegisterError: null })
     try {
-      const res = await fetch('/api/risk-register')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ riskRegister: data, riskRegisterLoading: false })
+      const { data } = await api.get('/api/risk-register')
+      set({ riskRegister: data.data || data, riskRegisterLoading: false })
     } catch (err) {
-      set({ riskRegisterLoading: false, riskRegisterError: err.message })
+      set({ riskRegisterError: err?.response?.data?.message || err?.message || 'Failed', riskRegisterLoading: false })
     }
   },
 
-  // RFIs
+  // ── RFI ──
   rfi: [],
   rfiLoading: false,
   rfiError: null,
   fetchRfi: async () => {
-    if (get().rfi.length > 0) return
-    set({ rfiLoading: true })
+    set({ rfiLoading: true, rfiError: null })
     try {
-      const res = await fetch('/api/rfi')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ rfi: data, rfiLoading: false })
+      const { data } = await api.get('/api/rfi')
+      set({ rfi: data.data || data, rfiLoading: false })
     } catch (err) {
-      set({ rfiLoading: false, rfiError: err.message })
+      set({ rfiError: err?.response?.data?.message || err?.message || 'Failed', rfiLoading: false })
     }
   },
 
-  // Daily Logs
+  // ── Daily Logs ──
   dailyLogs: [],
   dailyLogsLoading: false,
   dailyLogsError: null,
   fetchDailyLogs: async () => {
-    if (get().dailyLogs.length > 0) return
-    set({ dailyLogsLoading: true })
+    set({ dailyLogsLoading: true, dailyLogsError: null })
     try {
-      const res = await fetch('/api/daily-logs')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ dailyLogs: data, dailyLogsLoading: false })
+      const { data } = await api.get('/api/daily-logs')
+      set({ dailyLogs: data.data || data, dailyLogsLoading: false })
     } catch (err) {
-      set({ dailyLogsLoading: false, dailyLogsError: err.message })
+      set({ dailyLogsError: err?.response?.data?.message || err?.message || 'Failed', dailyLogsLoading: false })
     }
   },
 
-  // Site Photos
+  // ── Site Photos ──
   sitePhotos: [],
   sitePhotosLoading: false,
   sitePhotosError: null,
   fetchSitePhotos: async () => {
-    if (get().sitePhotos.length > 0) return
-    set({ sitePhotosLoading: true })
+    set({ sitePhotosLoading: true, sitePhotosError: null })
     try {
-      const res = await fetch('/api/site-photos')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ sitePhotos: data, sitePhotosLoading: false })
+      const { data } = await api.get('/api/site-photos')
+      set({ sitePhotos: data.data || data, sitePhotosLoading: false })
     } catch (err) {
-      set({ sitePhotosLoading: false, sitePhotosError: err.message })
+      set({ sitePhotosError: err?.response?.data?.message || err?.message || 'Failed', sitePhotosLoading: false })
     }
   },
 
-  // Documents
+  // ── Documents ──
   documents: [],
   documentsLoading: false,
   documentsError: null,
   fetchDocuments: async () => {
-    if (get().documents.length > 0) return
-    set({ documentsLoading: true })
+    set({ documentsLoading: true, documentsError: null })
     try {
-      const res = await fetch('/api/documents')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      set({ documents: data, documentsLoading: false })
+      const { data } = await api.get('/api/documents')
+      set({ documents: data.data || data, documentsLoading: false })
     } catch (err) {
-      set({ documentsLoading: false, documentsError: err.message })
+      set({ documentsError: err?.response?.data?.message || err?.message || 'Failed', documentsLoading: false })
     }
   },
+
+  // ── Gantt Tasks ──
+  ganttTasks: [],
+  ganttTasksLoading: false,
+  ganttTasksError: null,
+  fetchGanttTasks: async () => {
+    set({ ganttTasksLoading: true, ganttTasksError: null })
+    try {
+      const { data } = await api.get('/api/gantt-tasks')
+      set({ ganttTasks: data.data || data, ganttTasksLoading: false })
+    } catch (err) {
+      set({ ganttTasksError: err?.response?.data?.message || err?.message || 'Failed', ganttTasksLoading: false })
+    }
+  },
+
+  // ── AI Chat ──
+  aiMessages: [],
+  aiLoading: false,
+  sendAiChat: async (message, context = {}) => {
+    const messages = [...get().aiMessages, { role: 'user', content: message }]
+    set({ aiMessages: messages, aiLoading: true })
+    try {
+      const { data } = await api.post('/api/ai/chat', { message, ...context })
+      const reply = data.data?.response || data.response || 'No response.'
+      set({ aiMessages: [...messages, { role: 'assistant', content: reply }], aiLoading: false })
+    } catch {
+      set({ aiMessages: [...messages, { role: 'assistant', content: 'Error: Could not get response.' }], aiLoading: false })
+    }
+  },
+  clearAiMessages: () => set({ aiMessages: [] }),
 }))
 
 export default useAppStore

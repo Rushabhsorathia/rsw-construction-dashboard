@@ -22,9 +22,9 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     fetchProjectById(id)
-    if (budget.length === 0) fetchBudget()
-    if (resources.length === 0) fetchResources()
-    if (ganttTasks.length === 0) fetchGanttTasks()
+    fetchBudget()
+    fetchResources()
+    fetchGanttTasks()
   }, [id])
 
   if (currentProjectLoading) {

@@ -1,6 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-rsw-50: #f0f7ff;
+  --color-rsw-100: #e0efff;
+  --color-rsw-200: #bae0ff;
+  --color-rsw-300: #7cc5ff;
+  --color-rsw-400: #36a3ff;
+  --color-rsw-500: #0b84e4;
+  --color-rsw-600: #006dc4;
+  --color-rsw-700: #00569e;
+  --color-rsw-800: #00467f;
+  --color-rsw-900: #003b68;
+  --color-accent: #ff6b35;
+  --color-accent-dark: #e55a25;
+}
 
 * {
   -webkit-font-smoothing: antialiased;

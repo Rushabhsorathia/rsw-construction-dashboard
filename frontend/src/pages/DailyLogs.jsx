@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react'
 import {
-  FileText, Plus, Search, Calendar, Sun, Cloud, CloudRain,
+  FileText, Plus, Search, Calendar, Sun, Cloud, CloudRain, CloudSun,
   Thermometer, Wind, Users, Clock, CheckCircle2, AlertTriangle,
   ChevronDown, Download, Image, Building2, TrendingUp, TrendingDown, Loader2
 } from 'lucide-react'
 import useAppStore from '../store/appStore'
+
+const weatherIcons = {
+  'sunny': Sun,
+  'partly cloudy': CloudSun,
+  'cloudy': Cloud,
+  'light rain': CloudRain,
+  'heavy rain': CloudRain,
+}
 
 const projects = ['All Sites', 'Battersea Phase 2', 'Manchester Metro Hub', 'Bristol Harbour Bridge', 'Leeds Green Park', 'Birmingham Central Plaza', 'Newcastle Innovation Centre']
 
@@ -18,7 +26,10 @@ export default function DailyLogs() {
     fetchDailyLogs()
   }, [fetchDailyLogs])
 
-  const logs = dailyLogs || []
+  const logs = (dailyLogs || []).map(log => ({
+    ...log,
+    weatherIcon: weatherIcons[(log.weather || '').toLowerCase()] || Sun,
+  }))
 
   const filtered = logs.filter(log => {
     const matchProj = projFilter === 'All Sites' || log.project === projFilter

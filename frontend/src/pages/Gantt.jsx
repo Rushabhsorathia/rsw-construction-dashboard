@@ -25,15 +25,15 @@ export default function Gantt() {
   const [selectedPhase, setSelectedPhase] = useState(null)
   const today = 9 // Week 9 marker
 
-  const ganttTasks = useAppStore(s => s.ganttTasks)
+  const ganttTasks = useAppStore(s => s.ganttTasks) || []
   const ganttTasksLoading = useAppStore(s => s.ganttTasksLoading)
   const fetchGanttTasks = useAppStore(s => s.fetchGanttTasks)
 
   useEffect(() => {
-    if (ganttTasks.length === 0) fetchGanttTasks()
+    fetchGanttTasks()
   }, [])
 
-  if (ganttTasksLoading && ganttTasks.length === 0) {
+  if (ganttTasksLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />

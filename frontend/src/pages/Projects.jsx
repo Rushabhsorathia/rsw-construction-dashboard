@@ -14,13 +14,13 @@ export default function Projects() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [typeFilter, setTypeFilter] = useState('All')
 
-  const projects = useAppStore(s => s.projects)
+  const projects = useAppStore(s => s.projects) || []
   const projectsLoading = useAppStore(s => s.projectsLoading)
   const projectsError = useAppStore(s => s.projectsError)
   const fetchProjects = useAppStore(s => s.fetchProjects)
 
   useEffect(() => {
-    if (projects.length === 0) fetchProjects()
+    fetchProjects()
   }, [])
 
   const filtered = projects.filter(p => {

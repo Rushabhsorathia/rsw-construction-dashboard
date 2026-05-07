@@ -203,8 +203,18 @@ export default function SignIn() {
             </button>
           </form>
 
+          {/* Demo quick fill */}
+          <button
+            type="button"
+            onClick={() => formik.setValues({ email: 'tom@rsw.co.uk', password: 'password', remember: true })}
+            className="w-full mt-4 py-2 px-4 border border-slate-700 hover:border-orange-500/50 rounded-lg text-xs text-slate-400 hover:text-orange-400 transition-all flex items-center justify-center gap-2"
+          >
+            <span className="text-slate-500">Use demo credentials:</span>
+            <code className="text-orange-400/70">tom@rsw.co.uk</code>
+          </button>
+
           {/* Footer */}
-          <p className="text-center text-slate-500 text-xs mt-8">
+          <p className="text-center text-slate-500 text-xs mt-6">
             RSW Construction Management System v2.0
           </p>
         </div>
